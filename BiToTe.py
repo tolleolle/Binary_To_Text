@@ -1,34 +1,10 @@
 #!/usr/bin/env python3
 """
 Thorlabs CCS – Binary -> TXT Converter
-
-Dieses Skript wandelt eine rohe Binärdatei (.bin/.dat) in eine
-lesbare TXT-Datei um.
-
-WICHTIG:
-Das exakte Binärformat der CCS-Messdaten ist ohne einen Beispiel-Datenblock
-nicht sicher bekannt. Deshalb sind die wichtigsten Einstellungen oben
-konfigurierbar.
-
-Standard:
-- 2 Bytes pro Messwert
-- Little Endian
-- unsigned 16-bit integer
-- kein Header
-- ein Messwert pro Zeile
-
-Aufruf in VS Code:
-    python ccs_binary_to_txt.py messung.bin
-
-oder:
-    python ccs_binary_to_txt.py messung.bin messung.txt
-
-Weitere Optionen:
-    python ccs_binary_to_txt.py messung.bin --signed
-    python ccs_binary_to_txt.py messung.bin --big-endian
-    python ccs_binary_to_txt.py messung.bin --bytes-per-value 4
-    python ccs_binary_to_txt.py messung.bin --skip-bytes 16
+To use it: 
+ python BiToTe.py Name_DataFile_Binary.bin
 """
+
 
 from __future__ import annotations
 
