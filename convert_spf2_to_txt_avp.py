@@ -10,7 +10,7 @@ import subprocess
 import os
 
 import numpy as np
-
+import pandas as pd
 
 HEADER_OFFSET = 524       # Byte-Position der Messpunktanzahl im Header
 HEADER_FIELD_SIZE = 4     # Anzahl ist ein 32-Bit-Integer (4 Bytes)
@@ -52,7 +52,7 @@ def convert_spf2_to_txt(filepath: Path) -> bool:
             raw_data = f.read(offset)
 
         # Binärdaten in ein NumPy-Array umwandeln.(Fließkommazahlen)
-        data = np.frombuffer(raw_data, dtype="<f4")
+        data = pd.DataFrame(pd.frombuffer(raw_data, dtype="<f4"))
        #Bringt die Daten in eine Tabellenform
         data_cols = data.reshape((VALUES_PER_POINT, length)).T
     #Fängt die Fehler beim Einlesen ab
@@ -64,7 +64,7 @@ def convert_spf2_to_txt(filepath: Path) -> bool:
     out_path = filepath.with_suffix(".txt")
     try:
         # Speichert die Daten als Tab-getrennte Textdatei ab.
-        np.savetxt(
+        pd.savetxt(
             out_path,
             data_cols,
             delimiter="\t",
