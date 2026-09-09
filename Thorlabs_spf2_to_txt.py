@@ -1,3 +1,4 @@
+# THORLabsSpectrometer\Thorlabs_spf2_to_txt.py
 """
 Skript zur Konvertierung von Thorlabs .spf2-Dateien in .txt-Dateien
 unter Verwendung von pathlib.
@@ -124,7 +125,7 @@ def Thorlabs_spf2_to_txt(filepath: Path) -> bool:
 
 if __name__ == "__main__":
     subprocess.run('cls' if os.name == 'nt' else 'clear', shell=True)
-    file = "C:\\Users\\hanne\\Desktop\\Prakikum Greifswald\\Projekt für Andrei\\05a2p0kW_10s.spf2"
+    file = "C:\\Andrei\\THORLabsSpectrometer\\05a2p0kW_10s.spf2"  # Pfad zur .spf2-Datei
     f_path = Path(file)
     print(f"Konvertiere Datei: {f_path}")
     Thorlabs_spf2_to_txt(f_path)
