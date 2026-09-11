@@ -164,17 +164,3 @@ if __name__ == "__main__":
     converter._search_numbers(silent=False)
     converter._search_64bit_numbers(silent=False)
 
-    # converter._parse_header(silent=False)
-
-
-
-
-
-
-    # tc = TerminalColours()
-    # print(f"{tc.BLUE} Project directory:{tc.RESET} {PROJECT_DIR}")
-    
-    # # data_dir = fu.select_folder(PROJECT_DIR)
-    # # print(f"{tc.BLUE} Data directory: {tc.RESET} {data_dir}")
-    # file = fu.select_file(PROJECT_DIR,)  # "spf2"
-    # print(f"{tc.BLUE} Selected file: {tc.RESET} {file}")
