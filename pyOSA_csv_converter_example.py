@@ -1,3 +1,4 @@
+# THORLabsSpectrometer\pyOSA_csv_converter_example.py
 import os
 import pyOSA
 

@@ -9,10 +9,18 @@ Gedacht für Spektren des Thorlabs-Spektrometers CCS100/M.
 import struct
 from pathlib import Path
 import os
+import sys
 import subprocess
 
 import numpy as np
 import pandas as pd
+current_file = Path(__file__).resolve()
+project_root = current_file.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from utils.terminal_styler import TerminalColours
+tc=TerminalColours()
 
 HEADER_OFFSET = 524        ## Byte-Position der Messpunktanzahl im Header, vorher Informationen zum Gerätentypus
 HEADER_FIELD_SIZE = 4      ## Anzahl ist ein 32-Bit-Integer (4 Bytes)
@@ -116,16 +124,39 @@ def Thorlabs_spf2_to_txt(filepath: Path) -> bool:
             float_format="%.9e",
         )
     except OSError as error:
-        print(f"Fehler beim Schreiben von {out_path.name}: {error}")
+        print(f"{tc.RED}Fehler beim Schreiben von {tc.RESET} {out_path.name}: {tc.RED}{error}{tc.RESET}")
         return False
 
-    print(f"Erfolgreich konvertiert: {out_path.name}")
+    print(f"{tc.GREEN}Erfolgreich konvertiert: {tc.RESET} {out_path.name}")
     return True
+
+
+def convert_folder(folder_path: Path) -> None:
+    """
+    Konvertiert alle .spf2-Dateien in einem Ordner in .txt-Dateien.
+    """
+    if not folder_path.is_dir():
+        print(f"{tc.RED}Fehler: {tc.RESET} {folder_path} ist kein gültiger Ordner.")
+        return
+
+    spf2_files = list(folder_path.glob("*.spf2"))
+    if not spf2_files:
+        print(f"{tc.YELLOW}Keine .spf2-Dateien im Ordner gefunden: {tc.RESET} {folder_path}")
+        return
+
+    for spf2_file in spf2_files:
+        Thorlabs_spf2_to_txt(spf2_file)
 
 
 if __name__ == "__main__":
     subprocess.run('cls' if os.name == 'nt' else 'clear', shell=True)
-    file = "C:\\Andrei\\THORLabsSpectrometer\\05a2p0kW_10s.spf2"  # Pfad zur .spf2-Datei
-    f_path = Path(file)
-    print(f"Konvertiere Datei: {f_path}")
+    print(f"Projektverzeichnis: {project_root}")
+    f_path = project_root / "DATA" / "05a2p0kW_10s.spf2"
+    print(f"Test Datei: {f_path}")
+    print(f"{type(f_path)=}, {f_path.name=}, {f_path.suffix=}, {f_path.stem=}")
     Thorlabs_spf2_to_txt(f_path)
+
+
+    # f_path = Path(file)
+    # print(f"Konvertiere Datei: {f_path}")
+    # Thorlabs_spf2_to_txt(f_path)

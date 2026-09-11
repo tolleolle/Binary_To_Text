@@ -21,7 +21,7 @@ import utils.file_utils as fu
 
 
 class SPF2Converter(TerminalColours):
-    BYTE_OFFSET = 6160 #524 
+    BYTE_OFFSET = 6132 #524 6160 Number of Header bytes
     NUMERIC_BYTES = 4
 
     def __init__(self):
@@ -79,11 +79,62 @@ class SPF2Converter(TerminalColours):
                     print(f"Found word: {word} at offset {start_offset}-{end_offset}")
                 current_chars = []
                     
-
-
-
     def _search_numbers(self, silent=False):
-        pass
+        limit = min(self.BYTE_OFFSET, len(self._raw_bytes) - 3)
+        for offset in range(0, limit, 4):
+            chunk = self._raw_bytes[offset : offset + 4]
+
+            ## Unpack as a 32-bit signed/unsigned integer.
+            val_int = struct.unpack("<i", chunk)[0]
+            val_uint = struct.unpack("<I", chunk)[0]
+
+            ## Unpack as a 32-bit floating-point number (float)
+            val_float = struct.unpack("<f", chunk)[0]
+
+            ## Skip empty (zero) bytes.
+            if val_uint == 0:
+                continue
+
+            findings = []
+
+            ## Filter for integers (e.g., number of points, time in ms/μs)
+            if 0 < val_int < 1_000_000_000:
+                findings.append(f"int32 = {self.GREEN}{val_int}{self.RESET}")
+
+            ## Filter for floating-point numbers (time in seconds, calibration coefficients)
+            if not np.isnan(val_float) and not np.isinf(val_float):
+                if 0.00001 <= abs(val_float) <= 1_000_000.0:
+                    findings.append(f"float32 = {self.YELLOW2}{val_float:.6g}{self.RESET}")
+
+            ## Print meaningful numbers
+            if findings and not silent:
+                range_str = f"{offset:4d}..{offset+3:4d}"
+                print(f" Offset {self.BLUE}{range_str}{self.RESET} байт | " + " | ".join(findings))
+
+        return self
+
+    def _search_64bit_numbers(self, silent=False):
+        print(f"{self.BLUE} Searching for 64-bit numbers in the header... {self.RESET}")
+        limit = min(self.BYTE_OFFSET, len(self._raw_bytes) - 7)
+        for offset in range(0, limit, 8):
+            chunk = self._raw_bytes[offset : offset + 8]
+
+            # Unpack as a 64-bit floating-point number (double)
+            val_double = struct.unpack("<d", chunk)[0]
+
+            # Skip empty (zero) bytes.
+            if val_double == 0.0:
+                continue
+
+            # Filter for floating-point numbers (time in seconds, calibration coefficients)
+            if not np.isnan(val_double) and not np.isinf(val_double):
+                if 0.00001 <= abs(val_double) <= 1_000_000.0:
+                    if not silent:
+                        range_str = f"{offset:4d}..{offset+7:4d}"
+                        print(f" Offset {self.BLUE}{range_str}{self.RESET} байт | double64 = {self.YELLOW2}{val_double:.6g}{self.RESET}")
+
+        return self
+
 
     def _parse_header(self, silent=False):
         if not self._raw_bytes:
@@ -110,7 +161,8 @@ if __name__ == "__main__":
     converter.select_file(silent=False).load(silent=False)
     print(len(converter._raw_bytes) if converter._raw_bytes else "No data loaded.")
     converter._search_words(silent=False)
-
+    converter._search_numbers(silent=False)
+    converter._search_64bit_numbers(silent=False)
 
     # converter._parse_header(silent=False)
 
