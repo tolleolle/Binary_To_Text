@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path, PurePath
 import os
 import sys
+import subprocess
 import getpass
 import json
 from PyQt6.QtWidgets import QApplication, QFileDialog
@@ -196,9 +197,27 @@ def read_file(filepath, header_lines:int=None, separator="\t" ):
     return df, header
     
 
+def list_files_in_folder(folder_path: Path = None, extension: str = None):
+    """
+    Lists files in a folder with an optional extension filter.
+    """
+    if not folder_path:
+        folder_path = select_folder()
+
+    if not folder_path.is_dir():
+        print(f"{tc.RED}Error: {tc.RESET} {folder_path} is not a valid directory.")
+        return []
+
+    if extension:
+        files = list(folder_path.glob(f"*{extension}"))
+    else:
+        files = list(folder_path.iterdir())
+
+    return files
+
 
 if __name__ == "__main__":
-    os.system('cls' if os.name == 'nt' else 'clear')
+    subprocess.run('cls' if os.name == 'nt' else 'clear', shell=True)
 
     rpath = RELATIVE_BASE_PATH / "test_output_delete_me"
 
