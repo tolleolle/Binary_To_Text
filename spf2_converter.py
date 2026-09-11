@@ -18,7 +18,7 @@ if str(PROJECT_DIR) not in sys.path:
 
 from utils.terminal_styler import TerminalColours
 import utils.file_utils as fu
-
+import thorlabs_spf2_to_txt as hannes 
 
 class SPF2Converter(TerminalColours):
     BYTE_OFFSET = 6132 #524 6160 Number of Header bytes
@@ -78,6 +78,7 @@ class SPF2Converter(TerminalColours):
                     end_offset = start_offset + len(current_chars) - 1
                     print(f"Found word: {word} at offset {start_offset}-{end_offset}")
                 current_chars = []
+
                     
     def _search_numbers(self, silent=False):
         limit = min(self.BYTE_OFFSET, len(self._raw_bytes) - 3)
@@ -112,6 +113,7 @@ class SPF2Converter(TerminalColours):
                 print(f" Offset {self.BLUE}{range_str}{self.RESET} байт | " + " | ".join(findings))
 
         return self
+
 
     def _search_64bit_numbers(self, silent=False):
         print(f"{self.BLUE} Searching for 64-bit numbers in the header... {self.RESET}")
@@ -155,12 +157,26 @@ class SPF2Converter(TerminalColours):
         return self
 
 
+    def convert_folder(self):
+        folder_path = fu.select_folder(self.data_dir)
+        self.data_dir = folder_path.parent
+        if not folder_path.exists() or not folder_path.is_dir():
+            print(f"{self.RED}Invalid folder path: {self.RESET} {folder_path}")
+            return
+
+        hannes.convert_folder(folder_path)
+        return self
+
 if __name__ == "__main__":
     subprocess.run('cls' if os.name == 'nt' else 'clear', shell=True)
     converter = SPF2Converter()
-    converter.select_file(silent=False).load(silent=False)
+    # converter.select_file(silent=False).load(silent=False)
     print(len(converter._raw_bytes) if converter._raw_bytes else "No data loaded.")
-    converter._search_words(silent=False)
-    converter._search_numbers(silent=False)
-    converter._search_64bit_numbers(silent=False)
+    # converter._search_words(silent=False)
+    # converter._search_numbers(silent=False)
+    # converter._search_64bit_numbers(silent=False)
+
+    # print(f"{converter.filepath=}, {converter.data_dir=},")
+    # hannes.thorlabs_spf2_to_txt(converter.filepath)
+    converter.convert_folder()
 

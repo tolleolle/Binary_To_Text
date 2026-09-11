@@ -22,6 +22,8 @@ if str(project_root) not in sys.path:
 from utils.terminal_styler import TerminalColours
 tc=TerminalColours()
 
+
+
 HEADER_OFFSET = 524        ## Byte-Position der Messpunktanzahl im Header, vorher Informationen zum Gerätentypus
 HEADER_FIELD_SIZE = 4      ## Anzahl ist ein 32-Bit-Integer (4 Bytes)
 VALUES_PER_POINT = 4       ## pro Messpunkt: Wellenlänge 1 + Intensität 1 + Wellenlänge 2 + Intensität 2
@@ -55,7 +57,7 @@ def find_wavelength_start(values: np.ndarray, length: int, start_from: int = 0) 
     )
 
 
-def Thorlabs_spf2_to_txt(filepath: Path) -> bool:
+def thorlabs_spf2_to_txt(filepath: Path) -> bool:
 
     # Ermittelt die Dateigröße und speichert diese
     file_size = filepath.stat().st_size
@@ -112,7 +114,10 @@ def Thorlabs_spf2_to_txt(filepath: Path) -> bool:
         return False
 
     # Ersetzt die Dateiendung .spf2 durch .txt für die Ausgabedatei.
-    out_path = filepath.with_suffix(".txt")
+    ## out_path = filepath.with_suffix(".txt")
+    out_path = filepath.parent / "txt" / filepath.with_suffix(".txt").name
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
     try:
         # Speichert die Daten als Tab-getrennte Textdatei ab.
         data_cols.to_csv(
@@ -145,7 +150,8 @@ def convert_folder(folder_path: Path) -> None:
         return
 
     for spf2_file in spf2_files:
-        Thorlabs_spf2_to_txt(spf2_file)
+        thorlabs_spf2_to_txt(spf2_file)
+        print(f"{tc.BLUE}Konvertiere Datei: {tc.RESET} {spf2_file.name}")
 
 
 if __name__ == "__main__":
@@ -154,9 +160,9 @@ if __name__ == "__main__":
     f_path = project_root / "DATA" / "05a2p0kW_10s.spf2"
     print(f"Test Datei: {f_path}")
     print(f"{type(f_path)=}, {f_path.name=}, {f_path.suffix=}, {f_path.stem=}")
-    Thorlabs_spf2_to_txt(f_path)
+    thorlabs_spf2_to_txt(f_path)
 
 
     # f_path = Path(file)
     # print(f"Konvertiere Datei: {f_path}")
-    # Thorlabs_spf2_to_txt(f_path)
+    # thorlabs_spf2_to_txt(f_path)
