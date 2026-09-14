@@ -204,6 +204,10 @@ def list_files_in_folder(folder_path: Path = None, extension: str = None):
     if not folder_path:
         folder_path = select_folder()
 
+    if not folder_path:
+        print(f"{tc.RED}Error: {tc.RESET} No folder selected.")
+        return []
+
     if not folder_path.is_dir():
         print(f"{tc.RED}Error: {tc.RESET} {folder_path} is not a valid directory.")
         return []
