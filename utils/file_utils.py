@@ -287,9 +287,18 @@ if __name__ == "__main__":
 
   #  test_save_dataframe()
 
+    def test_list_files_in_folder():
+        folder_path = select_folder()
+        if folder_path:
+            files = list_files_in_folder(folder_path=folder_path)
+            print(f"Files in {folder_path}:")
+            for f in files:
+                print(f" - {f.name}")
+        else:
+            print("No folder selected.")
 
-    file_path = select_file()
-    print(file_path)
+    test_list_files_in_folder()
+    
     # header, n_lines = read_file_header(filepath=file_path)
     # print(header)
 
