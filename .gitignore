@@ -1,0 +1,14 @@
+# --- project related ---
+
+# jupyter notebook files will be trasfered without git tracking.
+# *.ipynb 
+
+# --- python related ---
+.*
+!.gitignore
+__pycache__/
+*.py[cod]
+
+#.venv/
+#.idea/
+#.vscode/
