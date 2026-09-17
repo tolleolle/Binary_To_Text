@@ -16,11 +16,11 @@ PROJECT_DIR = Path(__file__).parent
 if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
 
-from utils.terminal_styler import TerminalColours
+from utils.terminal_styler import TerminalColours as TC
 import utils.file_utils as fu
 import thorlabs_spf2_to_txt as hannes 
 
-class SPF2Converter(TerminalColours):
+class SPF2Converter(TC):
     BYTE_OFFSET = 6132 #524 6160 Number of Header bytes
     NUMERIC_BYTES = 4
 
@@ -167,16 +167,93 @@ class SPF2Converter(TerminalColours):
         hannes.convert_folder(folder_path)
         return self
 
+
+class BGCorrector():
+    def __init__(self):
+        self.data_dir = PROJECT_DIR
+        self.output_fname = None
+        self.spec_fpath = None
+        self.bg_fpath = None
+        self.fname_parts = None
+
+
+    def select_spec_file(self):
+        filepath = fu.select_file(self.data_dir,)
+        if filepath:
+            self.data_dir = filepath.parent if filepath else self.data_dir
+            self.spec_fpath = filepath
+        else:
+            print(f"{TC.RED} ERROR: {TC.RESET} file not selected")
+        return self
+
+    def select_bg_file(self):
+        filepath = fu.select_file(self.data_dir,)
+        if filepath:
+            self.data_dir = filepath.parent if filepath else self.data_dir
+            self.bg_fpath = filepath
+        else:
+            print(f"{TC.RED} ERROR: {TC.RESET} file not selected")
+        return self
+
+    def correct_file(self, tx_A=1, tx_B=1):
+        if not self.spec_fpath and self.bg_fpath:
+            print(f"{TC.RED} ERROR: {TC.RESET}: files spec or bg not selected")
+            return self
+        df = pd.read_csv(self.spec_fpath, sep="\t", header=1, 
+                       names=["wavelength1", "intensity1",
+                            "wavelength2", "intensity2"],
+                        dtype={"wavelength1": float, "intensity1": float,
+                               "wavelength2": float, "intensity2": float},
+                            )
+        df_bg = pd.read_csv(self.bg_fpath, sep="\t", header=1, 
+                       names=["wavelength1", "intensity1",
+                            "wavelength2", "intensity2"],
+                        dtype={"wavelength1": float, "intensity1": float,
+                               "wavelength2": float, "intensity2": float},
+                            )
+        df_substracted = df_bg.copy()
+        df_substracted["intensity1"] = (df["intensity1"] - df_bg["intensity1"]) / tx_A
+        df_substracted["intensity2"] = (df["intensity2"] - df_bg["intensity2"]) / tx_B
+
+        if not self.fname_parts:
+            output_fname = self.spec_fpath.name
+        else:
+            print("ERROR")
+
+        output_dir = self.data_dir.parent / "bg_corr"
+        output_path = output_dir / output_fname
+        print(f"{output_path=}")
+        output_dir.mkdir(exist_ok=True)
+        df_substracted.to_csv(output_path, sep="\t", index=False)
+
+        return self
+
+        
+    def _parse_fname(self):
+        pass
+
+
+    def subtract_bg_pairs():
+        pass
+
+
+
+
+
 if __name__ == "__main__":
     subprocess.run('cls' if os.name == 'nt' else 'clear', shell=True)
-    converter = SPF2Converter()
+    # converter = SPF2Converter()
     # converter.select_file(silent=False).load(silent=False)
-    print(len(converter._raw_bytes) if converter._raw_bytes else "No data loaded.")
+    # print(len(converter._raw_bytes) if converter._raw_bytes else "No data loaded.")
     # converter._search_words(silent=False)
     # converter._search_numbers(silent=False)
     # converter._search_64bit_numbers(silent=False)
 
     # print(f"{converter.filepath=}, {converter.data_dir=},")
     # hannes.thorlabs_spf2_to_txt(converter.filepath)
-    converter.convert_folder()
+    #converter.convert_folder()
+
+    corrector = BGCorrector()
+    corrector.select_spec_file().select_bg_file()
+    corrector.correct_file()
 
