@@ -48,12 +48,12 @@ class PlotStyler:
             },
 
             'compact': {
-                'font.size': base,
-                'axes.labelsize': base * 0.9,
+                'font.size': base * 0.7,
+                'axes.labelsize': base * 1,
                 'axes.titlesize': base * 1.0,
                 'xtick.labelsize': base * 0.7,
                 'ytick.labelsize': base * 0.7,
-                'legend.fontsize': base * 0.8,
+                'legend.fontsize': base * 0.7,
             },
 
         }
