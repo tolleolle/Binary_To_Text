@@ -173,6 +173,8 @@ class BGCorrector():
         self.data_dir = PROJECT_DIR
         self.output_fname = None
         self.spec_fpath = None
+        self.fpath_paired = []
+        self.fpath_single = []
         self.bg_fpath = None
         self.fname_parts = None
 
@@ -180,7 +182,7 @@ class BGCorrector():
     def select_spec_file(self):
         filepath = fu.select_file(self.data_dir,)
         if filepath:
-            self.data_dir = filepath.parent if filepath else self.data_dir
+            self.data_dir = filepath.parent 
             self.spec_fpath = filepath
         else:
             print(f"{TC.RED} ERROR: {TC.RESET} file not selected")
@@ -194,6 +196,10 @@ class BGCorrector():
         else:
             print(f"{TC.RED} ERROR: {TC.RESET} file not selected")
         return self
+
+    def select_folder(self):
+        self.data_dir = fu.select_folder(self.data_dir)
+        print(f"{self.data_dir=}")
 
 
     def read_file(self, fpath):
@@ -210,7 +216,11 @@ class BGCorrector():
     
 
     def correct_file(self, tx_A=1, tx_B=1):
-        if not self.spec_fpath and self.bg_fpath:
+        """
+        correcting backgraund and explosure time
+        tx_A and tx_B in seconds are assumed 
+        """
+        if not self.spec_fpath or not self.bg_fpath:
             print(f"{TC.RED} ERROR: {TC.RESET}: files spec or bg not selected")
             return self
 
@@ -235,14 +245,66 @@ class BGCorrector():
 
         return self
 
-        
-    def _parse_fname(self):
-        pass
 
+    def _get_tx(self, fpath:Path):
+        """takes spec_fpath and parse tx_A, tx_B 
+           takes tx in ms and returns in sec
+        """
+        if fpath:   
+            self.spec_fpath = fpath
+        if not self.spec_fpath:
+            print(f"{TC.RED} ERROR:{TC.RESET} file not selected")
+            return None 
+        sp_name = fpath.name.split('_')
 
-    def subtract_bg_pairs():
-        pass
+        txa_part = sp_name[2].split('ms')
+        tx_A = txa_part[0].replace("a", "")
+        tx_A = int(tx_A) / 1000
 
+        txb_part = sp_name[2].split('ms')
+        tx_B = txb_part[0].replace("a", "")
+        tx_B = int(tx_B) / 1000
+        return {'tx_A': tx_A, 'tx_B': tx_B}
+   
+
+    def get_spec_bg_pairs(self):
+        self.select_folder()
+        files = fu.list_files_in_folder(self.data_dir)
+
+        ## seporate spec and bg files
+        bg_files = []
+        spec_files = []
+        for file in files:
+            if file.name.endswith('_bg.txt'):
+                bg_files.append(file)
+            else:
+                spec_files.append(file)
+
+        # for f in bg_files:
+        #     print(f.name)
+        ## seporate piared and single files
+        self.fpath_paired = []
+        self.fpath_single = []
+        for f in spec_files:
+            f_bg = f.parent / f"{f.stem}_bg.txt"
+            if f_bg in bg_files:
+                print(f"{TC.GREEN} {f.stem} {TC.RESET}")
+                self.fpath_paired.append(f)
+            else:
+                print(f"{TC.RED}{f.stem} {TC.RESET}")
+                self.fpath_single.append(f)
+        return self
+
+    def correct_folder(self):
+        if not self.fpath_paired:
+            print(f"{TC.RED} ERROR:{TC.RESET} run get_spec_bg_pairs() first")
+            return 
+
+        for f in self.fpath_paired:
+            self.spec_fpath = f
+            self.bg_fpath = f.parent / f"{f.stem}_bg.txt"
+            tx = self._get_tx(f)
+            self.correct_file(**tx)
 
 
 
