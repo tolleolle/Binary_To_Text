@@ -195,22 +195,28 @@ class BGCorrector():
             print(f"{TC.RED} ERROR: {TC.RESET} file not selected")
         return self
 
+
+    def read_file(self, fpath):
+        if not fpath:
+            print(f"{TC.RED} ERROR: {TC.RESET}: files spec or bg not selected")
+            return self
+        df = pd.read_csv(fpath, sep="\t", header=1, 
+                               names=["wavelength1", "intensity1",
+                                    "wavelength2", "intensity2"],
+                                dtype={"wavelength1": float, "intensity1": float,
+                                       "wavelength2": float, "intensity2": float},
+                                    )
+        return df
+    
+
     def correct_file(self, tx_A=1, tx_B=1):
         if not self.spec_fpath and self.bg_fpath:
             print(f"{TC.RED} ERROR: {TC.RESET}: files spec or bg not selected")
             return self
-        df = pd.read_csv(self.spec_fpath, sep="\t", header=1, 
-                       names=["wavelength1", "intensity1",
-                            "wavelength2", "intensity2"],
-                        dtype={"wavelength1": float, "intensity1": float,
-                               "wavelength2": float, "intensity2": float},
-                            )
-        df_bg = pd.read_csv(self.bg_fpath, sep="\t", header=1, 
-                       names=["wavelength1", "intensity1",
-                            "wavelength2", "intensity2"],
-                        dtype={"wavelength1": float, "intensity1": float,
-                               "wavelength2": float, "intensity2": float},
-                            )
+
+        df = self.read_file(fpath=self.spec_fpath)
+        df_bg = self.read_file(fpath=self.bg_fpath)
+
         df_substracted = df_bg.copy()
         df_substracted["intensity1"] = (df["intensity1"] - df_bg["intensity1"]) / tx_A
         df_substracted["intensity2"] = (df["intensity2"] - df_bg["intensity2"]) / tx_B
@@ -218,7 +224,8 @@ class BGCorrector():
         if not self.fname_parts:
             output_fname = self.spec_fpath.name
         else:
-            print("ERROR")
+            print("make new name")
+            output_fname = self.fname_parts[0] + '_' + self.fname_parts[1] + '.txt'
 
         output_dir = self.data_dir.parent / "bg_corr"
         output_path = output_dir / output_fname
