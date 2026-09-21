@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.widgets import Button, CheckButtons
+from matplotlib.widgets import Button, CheckButtons, TextBox
 from scipy.signal import peak_widths
 import tkinter as tk
 from tkinter import filedialog
@@ -66,84 +66,101 @@ else:
 FARBPALETTE = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
 # ---------------------------------------------------------------------------
-# Literaturwerte zur Wellenlängenkalibrierung (Luftwellenlängen nach NIST, in nm)
+# Feste Pixel-Zuordnung für Argon-Linien (Pixel, Wellenlänge in nm)
 # ---------------------------------------------------------------------------
+# Literaturwerte zur automatischen Spezies-Erkennung (Ar I / Ar II)
 ARGON_LINIEN_NM: list[tuple[float, str]] = [
-    # --- Ar I (neutrales Argon) ---
-    (404.442, "Ar"),
-    (415.859, "Ar"),
-    (419.832, "Ar"),
-    (420.068, "Ar"),
-    (425.936, "Ar"),
-    (427.217, "Ar"),
-    (430.010, "Ar"),
-    (433.534, "Ar"),
-    (451.073, "Ar"),
-    (459.626, "Ar"),
-    (462.818, "Ar"),
-    (470.232, "Ar"),
-    (484.781, "Ar"),
-    (488.903, "Ar"),
-    (493.321, "Ar"),
-    (506.204, "Ar"),
-    (518.775, "Ar"),
-    (522.127, "Ar"),
-    (549.587, "Ar"),
-    (555.870, "Ar"),
-    (560.673, "Ar"),
-    (588.858, "Ar"),
-    (591.208, "Ar"),
-    (603.213, "Ar"),
-    (605.937, "Ar"),
-    (609.616, "Ar"),
-    (617.228, "Ar"),
-    (624.212, "Ar"),
-    (631.545, "Ar"),
-    (641.631, "Ar"),
-    (650.653, "Ar"),
-    (667.728, "Ar"),
-    (675.283, "Ar"),
-    (687.129, "Ar"),
-    (696.543, "Ar"),
-    (706.722, "Ar"),
-    (714.704, "Ar"),
-    (727.294, "Ar"),
-    (738.398, "Ar"),
-    (750.387, "Ar"),
-    (763.511, "Ar"),
-    (772.376, "Ar"),
-    (789.106, "Ar"),
-    (794.818, "Ar"),
-    (800.616, "Ar"),
-    (801.479, "Ar"),
-    (810.369, "Ar"),
-    (811.531, "Ar"),
-    (826.452, "Ar"),
-    (837.761, "Ar"),
-    (840.821, "Ar"),
-    (842.465, "Ar"),
-    (852.144, "Ar"),
-    (866.794, "Ar"),
-    (912.297, "Ar"),
-    (922.450, "Ar"),
-    (965.778, "Ar"),
-    
-    # --- Ar II (einfach ionisiertes Argon, Ar+) ---
-    (434.800, "Ar+"),
-    (454.504, "Ar+"),
-    (457.936, "Ar+"),
-    (465.795, "Ar+"),
-    (472.689, "Ar+"),
-    (476.488, "Ar+"),
-    (480.602, "Ar+"),
-    (487.986, "Ar+"),
-    (496.508, "Ar+"),
-    (501.717, "Ar+"),
-    (514.533, "Ar+"),
-    (528.700, "Ar+"),
+    (401.37, "Ar II"), (404.44, "Ar I"), (407.20, "Ar II"), (410.39, "Ar II"),
+    (415.86, "Ar I"), (416.41, "Ar I"), (418.19, "Ar I"), (419.10, "Ar I"),
+    (422.82, "Ar II"), (425.12, "Ar I"), (425.94, "Ar I"), (426.63, "Ar I"),
+    (427.22, "Ar I"), (430.01, "Ar I"), (437.13, "Ar II"), (437.97, "Ar II"),
+    (440.01, "Ar II"), (442.60, "Ar II"), (451.07, "Ar I"), (454.51, "Ar II"),
+    (457.93, "Ar II"), (458.99, "Ar II"), (460.96, "Ar II"), (465.79, "Ar II"),
+    (470.23, "Ar I"), (472.68, "Ar II"), (473.59, "Ar II"), (480.60, "Ar II"),
+    (484.78, "Ar II"), (487.99, "Ar II"), (493.32, "Ar II"), (496.51, "Ar II"),
+    (500.94, "Ar II"), (506.20, "Ar II"), (514.53, "Ar II"), (516.23, "Ar I"),
+    (518.78, "Ar I"), (545.17, "Ar I"), (549.59, "Ar I"), (555.87, "Ar I"),
+    (560.67, "Ar I"), (565.07, "Ar I"), (573.95, "Ar I"), (588.86, "Ar I"),
+    (591.21, "Ar I"), (603.21, "Ar I"), (604.32, "Ar I"), (605.94, "Ar I"),
+    (617.31, "Ar I"), (621.59, "Ar I"), (629.69, "Ar I"), (636.96, "Ar I"),
+    (638.47, "Ar I"), (664.37, "Ar II"), (667.73, "Ar I"), (675.28, "Ar I"),
+    (687.13, "Ar I"), (693.77, "Ar I"), (696.54, "Ar I"), (703.03, "Ar I"),
+    (706.72, "Ar I"), (714.71, "Ar I"), (720.70, "Ar I"), (727.29, "Ar I"),
+    (735.33, "Ar I"), (737.21, "Ar I"), (738.40, "Ar I")
 ]
 
-LITERATUR_TOLERANZ_NM = 1.0
+# Feste Kopplung der Peaks an die Pixelanzahl (Pixel -> Literatur-Wellenlänge)
+FESTE_PIXEL_PEAKS: list[tuple[int, float]] = [
+    (733,  401.37),
+    (760,  404.44),
+    (785,  407.20),
+    (813,  410.39),
+    (862,  415.86),
+    (867,  416.41),
+    (883,  418.19),
+    (891,  419.10),
+    (924,  422.82),
+    (945,  425.12),
+    (952,  425.94),
+    (958,  426.63),
+    (963,  427.22),
+    (988,  430.01),
+    (1050, 437.13),
+    (1057, 437.97),
+    (1076, 440.01),
+    (1098, 442.60),
+    (1173, 451.07),
+    (1203, 454.51),
+    (1233, 457.93),
+    (1243, 458.99),
+    (1259, 460.96),
+    (1301, 465.79),
+    (1340, 470.23),
+    (1361, 472.68),
+    (1369, 473.59),
+    (1431, 480.60),
+    (1467, 484.78),
+    (1495, 487.99),
+    (1540, 493.32),
+    (1568, 496.51),
+    (1606, 500.94),
+    (1652, 506.20),
+    (1724, 514.53),
+    (1738, 516.23),
+    (1760, 518.78),
+    (1986, 545.17),
+    (2023, 549.59),
+    (2077, 555.87),
+    (2118, 560.67),
+    (2156, 565.07),
+    (2231, 573.95),
+    (2357, 588.86),
+    (2377, 591.21),
+    (2479, 603.21),
+    (2488, 604.32),
+    (2502, 605.94),
+    (2597, 617.31),
+    (2633, 621.59),
+    (2702, 629.69),
+    (2763, 636.96),
+    (2776, 638.47),
+    (2993, 664.37),
+    (3022, 667.73),
+    (3084, 675.28),
+    (3184, 687.13),
+    (3239, 693.77),
+    (3263, 696.54),
+    (3316, 703.03),
+    (3347, 706.72),
+    (3414, 714.71),
+    (3464, 720.70),
+    (3520, 727.29),
+    (3586, 735.33),
+    (3602, 737.21),
+    (3612, 738.40)
+]
+
+LITERATUR_TOLERANZ_NM = 0.5
 
 def finde_literaturwert(
     wellenlaenge: float,
@@ -203,8 +220,7 @@ class SpektrumViewer:
         self.label_map: dict[str, str] = {}
         self.kalibrier_fig = None
         self._temp_matched_peaks = []
-        self.text_artists = []
-        self.check = None  # Wichtig, damit CheckButtons Referenz behält
+        self.check = None
 
         self._erstelle_fenster(titel)
         self._zeichne_kurven()
@@ -213,14 +229,11 @@ class SpektrumViewer:
         self._aktiviere_klick_auswahl()
         self._aktiviere_koordinaten_anzeige()
 
-    # -- Aufbau ---------------------------------------------------------
-
     def _erstelle_fenster(self, titel: str) -> None:
         self.fig, self.ax = plt.subplots(figsize=(13, 6))
         
         if self.fig.canvas.manager is not None:
             self.fig.canvas.manager.set_window_title(f"Spektrum-Viewer - {titel}")
-            
             try:
                 window = self.fig.canvas.manager.window
                 if hasattr(window, "state"):
@@ -228,30 +241,28 @@ class SpektrumViewer:
             except Exception:
                 pass
             
-        # Mehr Platz für das rechte Panel schaffen
         self.fig.subplots_adjust(right=0.72, bottom=0.15)
 
-        # Buttons im rechten Steuerungsbereich
-        ax_reset_button = self.fig.add_axes([0.74, 0.03, 0.22, 0.038])
+        ax_reset_button = self.fig.add_axes([0.74, 0.03, 0.22, 0.035])
         self.reset_button = Button(ax_reset_button, "Peaks zurücksetzen")
         self.reset_button.on_clicked(self._peaks_zuruecksetzen)
 
-        ax_button = self.fig.add_axes([0.74, 0.075, 0.22, 0.038])
+        ax_auto_button = self.fig.add_axes([0.74, 0.072, 0.22, 0.035])
+        self.auto_button = Button(ax_auto_button, "Peaks automatisch finden")
+        self.auto_button.on_clicked(self._peaks_automatisch_finden)
+
+        ax_button = self.fig.add_axes([0.74, 0.114, 0.22, 0.035])
         self.kalibrier_button = Button(ax_button, "Peaks bestätigen")
         self.kalibrier_button.on_clicked(self._kalibrierung_starten)
 
-        ax_add_button = self.fig.add_axes([0.74, 0.12, 0.22, 0.038])
+        ax_add_button = self.fig.add_axes([0.74, 0.156, 0.22, 0.035])
         self.add_button = Button(ax_add_button, "Datei hinzufügen")
         self.add_button.on_clicked(self._datei_hinzuufuegen)
 
-        self.ax.set_xlabel("Wellenlänge (nm)")
-        self.ax.set_ylabel("Intensität (a.u.)")
-        self.ax.set_title("Spektren-Viewer (Wellenlängen-Ansicht)")
+        self.ax.set_xlabel("Wellenlänge [nm]")
+        self.ax.set_ylabel("Intensität [a.u.]")
+        self.ax.set_title("Wellenlängenspektrum")
         self.ax.grid(True, alpha=0.3)
-
-        # Farb-kodiertes Info-Panel für erkannte Peaks auf der rechten Seite
-        self.ax_info = self.fig.add_axes([0.74, 0.40, 0.22, 0.55])
-        self.ax_info.axis("off")
 
     def _zeichne_kurven(self) -> None:
         for name, daten in self.serien.items():
@@ -265,7 +276,6 @@ class SpektrumViewer:
             self.linien[name] = linie
 
     def _skalierung_aktualisieren(self) -> None:
-        """Passt die Achsen-Skalierung dynamisch an die aktuell sichtbaren Serien an."""
         sichtbare_serien = [name for name, sichtbar in self.sichtbar.items() if sichtbar and name in self.serien]
         if not sichtbare_serien:
             return
@@ -319,8 +329,8 @@ class SpektrumViewer:
 
         aktive = [self.sichtbar.get(name, True) for name in self.serien.keys()]
 
-        height = min(0.70, max(0.1, 0.035 * len(labels_kurz) + 0.04))
-        self.ax_check = self.fig.add_axes([0.74, 0.175, 0.22, height])
+        height = min(0.60, max(0.10, 0.035 * len(labels_kurz) + 0.02))
+        self.ax_check = self.fig.add_axes([0.74, 0.205, 0.22, height])
         
         self.check = CheckButtons(
             ax=self.ax_check,
@@ -386,8 +396,6 @@ class SpektrumViewer:
         self.fig.canvas.draw_idle()
         print(f"Datei erfolgreich hinzugefügt: {neuer_pfad.name}")
 
-    # -- Peaks ------------------------------------------------------------
-
     def _entferne_alte_peak_grafik(self) -> None:
         for elemente in self.peak_grafik.values():
             alle_alten = elemente["marker"] + elemente["beschriftungen"]
@@ -405,31 +413,39 @@ class SpektrumViewer:
         for i, peak in enumerate(peaks):
             x_pos = peak.get("mess_wellenlaenge", peak["wellenlaenge"])
 
+            # Farbzuweisung gemäß Anforderung: Ar I = rot, Ar II = blau
+            peak_farbe = farbe
+            spezies = peak.get("spezies")
+            if spezies == "Ar I":
+                peak_farbe = "red"
+            elif spezies == "Ar II":
+                peak_farbe = "blue"
+
             (m,) = self.ax.plot(
                 x_pos, 
                 peak["intensitaet"],
                 "^",
-                color=farbe,
+                color=peak_farbe,
                 markersize=6,
                 markeredgecolor="black",
                 markeredgewidth=0.5,
             )
 
             if "spezies" in peak and "lit_wert" in peak:
-                label_text = f"[{peak['spezies']}] {x_pos:.2f} nm \n(lit: {peak['lit_wert']:.2f} nm)"
+                label_text = f"Px {int(peak['pixel'])} | [{peak['spezies']}] {x_pos:.2f} nm (lit: {peak['lit_wert']:.2f} nm)"
             else:
                 label_text = f"Pixel {int(peak['pixel'])} | {x_pos:.2f} nm"
-
-            offset_y = 12 if (i % 2 == 0) else 32
 
             text = self.ax.annotate(
                 label_text,
                 xy=(x_pos, peak["intensitaet"]),
-                xytext=(0, offset_y),
+                xytext=(0, 10),
                 textcoords="offset points",
-                fontsize=7,
+                rotation=90,
+                fontsize=6,
                 ha="center",
-                color=farbe,
+                va="bottom",
+                color=peak_farbe,
             )
 
             marker.append(m)
@@ -438,12 +454,70 @@ class SpektrumViewer:
         return {"marker": marker, "beschriftungen": beschriftungen}
 
     def _peaks_zuruecksetzen(self, ereignis=None) -> None:
-        """Setzt alle ausgewählten Peaks zurück."""
         for name in self.ausgewaehlte_peaks:
             self.ausgewaehlte_peaks[name].clear()
         
         self._aktualisiere_peak_anzeige()
         print("Alle Peaks wurden zurückgesetzt.")
+
+    def _peaks_automatisch_finden(self, ereignis=None) -> None:
+        """Platziert die Peaks exakt anhand der fest vorgegebenen Pixel-Wellenlängen-Liste.
+        Berücksichtigt dabei nur Serien, die in der Checkbox aktiviert sind."""
+        for name, daten in self.serien.items():
+            if not self.sichtbar.get(name, True):
+                self.ausgewaehlte_peaks[name] = []
+                continue
+            
+            intensitaeten = daten["intensitaet"]
+            wellenlaengen = daten["wellenlaenge"]
+            pixel_array = daten["pixel"]
+            max_pixel_idx = len(pixel_array) - 1
+            
+            self.ausgewaehlte_peaks[name] = []
+            
+            for pix, lit_wert in FESTE_PIXEL_PEAKS:
+                if pix > max_pixel_idx:
+                    continue
+                
+                idx = int(pix)
+                wl_aktuell = wellenlaengen[idx]
+                
+                # Bestimme Spezies (Ar I / Ar II) aus dem Literaturkatalog
+                treffer = finde_literaturwert(lit_wert)
+                spezies = treffer[1] if treffer is not None else "Unbekannt"
+                
+                try:
+                    _, hoehen, links_idx, rechts_idx = peak_widths(intensitaeten, [idx], rel_height=0.5)
+                    alle_indizes = np.arange(len(pixel_array))
+                    links_wl = np.interp(links_idx, alle_indizes, wellenlaengen)
+                    rechts_wl = np.interp(rechts_idx, alle_indizes, wellenlaengen)
+                    fwhm = rechts_wl[0] - links_wl[0]
+                    halbmax = hoehen[0]
+                    l_wl = links_wl[0]
+                    r_wl = rechts_wl[0]
+                except Exception:
+                    fwhm = 0.0
+                    halbmax = intensitaeten[idx] / 2
+                    l_wl = wl_aktuell
+                    r_wl = wl_aktuell
+
+                peak_daten = {
+                    "pixel": float(idx),
+                    "wellenlaenge": lit_wert,
+                    "mess_wellenlaenge": wl_aktuell,
+                    "intensitaet": intensitaeten[idx],
+                    "fwhm": fwhm,
+                    "halbmax_hoehe": halbmax,
+                    "links_wl": l_wl,
+                    "rechts_wl": r_wl,
+                    "spezies": spezies,
+                    "lit_wert": lit_wert,
+                }
+                
+                self.ausgewaehlte_peaks[name].append(peak_daten)
+                
+        self._aktualisiere_peak_anzeige()
+        print("Feste Peak-Zuordnung über Pixelanzahl abgeschlossen (nur für aktive Serien).")
 
     def _wende_sichtbarkeit_an(self) -> None:
         for name, linie in self.linien.items():
@@ -478,7 +552,7 @@ class SpektrumViewer:
             
             klick_idx = (np.abs(wellenlaengen - ereignis.xdata)).argmin()
             
-            fenster = 15
+            fenster = 3
             start_idx = max(0, klick_idx - fenster)
             end_idx = min(len(wellenlaengen), klick_idx + fenster)
             
@@ -496,6 +570,9 @@ class SpektrumViewer:
             rechts_wl = np.interp(rechts_idx, alle_indizes, wellenlaengen)
 
             wl_aktuell = wellenlaengen[idx]
+            
+            treffer = finde_literaturwert(wl_aktuell)
+            
             peak_daten = {
                 "pixel": float(idx),
                 "wellenlaenge": wl_aktuell,
@@ -506,6 +583,10 @@ class SpektrumViewer:
                 "links_wl": links_wl[0],
                 "rechts_wl": rechts_wl[0],
             }
+            if treffer is not None:
+                lit_wert, spezies = treffer
+                peak_daten["spezies"] = spezies
+                peak_daten["lit_wert"] = lit_wert
 
             existiert_bereits = False
             for p in self.ausgewaehlte_peaks[ziel_serie]:
@@ -524,51 +605,12 @@ class SpektrumViewer:
     def _aktualisiere_peak_anzeige(self) -> None:
         self._entferne_alte_peak_grafik()
 
-        for t in self.text_artists:
-            try:
-                t.remove()
-            except Exception:
-                pass
-        self.text_artists = []
-
         self.peak_grafik = {}
-        y_cursor = 0.95
-        line_height = 0.05
-
-        if hasattr(self, "ax_info"):
-            t_head = self.ax_info.text(0.02, y_cursor, "Erkannte Peaks:", fontsize=9, fontweight="bold", transform=self.ax_info.transAxes)
-            self.text_artists.append(t_head)
-            y_cursor -= line_height * 1.2
-
         for name, peaks in self.ausgewaehlte_peaks.items():
             self.peak_grafik[name] = self._zeichne_peaks_einer_serie(name, peaks, farbe=self.farben[name])
-            
-            if peaks and hasattr(self, "ax_info"):
-                farbe = self.farben[name]
-                t_serie = self.ax_info.text(0.02, y_cursor, f"--- {name[:18]} ---", fontsize=8, fontweight="bold", color=farbe, transform=self.ax_info.transAxes)
-                self.text_artists.append(t_serie)
-                y_cursor -= line_height
-                
-                for p in sorted(peaks, key=lambda x: x["wellenlaenge"]):
-                    if y_cursor < 0.05:
-                        t_more = self.ax_info.text(0.05, y_cursor, "... (weitere)", fontsize=7, color=farbe, transform=self.ax_info.transAxes)
-                        self.text_artists.append(t_more)
-                        break
-                        
-                    if "spezies" in p and "lit_wert" in p:
-                        meas_wl = p.get("mess_wellenlaenge", p["wellenlaenge"])
-                        txt = f"{p['spezies']} {meas_wl:.2f} (lit: {p['lit_wert']:.2f} nm)"
-                    else:
-                        txt = f"Unbek.: {p['wellenlaenge']:.2f} nm (Px {int(p['pixel'])})"
-                    
-                    t_peak = self.ax_info.text(0.05, y_cursor, txt, fontsize=7, color=farbe, transform=self.ax_info.transAxes)
-                    self.text_artists.append(t_peak)
-                    y_cursor -= line_height
 
         self._wende_sichtbarkeit_an()
         self.fig.canvas.draw_idle()
-
-    # -- Kalibrierung -------------------------------------------------------
 
     def _kalibrierung_starten(self, ereignis=None) -> None:
         pixel = []
@@ -576,21 +618,20 @@ class SpektrumViewer:
         serienname = []
         matched_peaks_info = []
 
-        print("\n--- Zuordnung der Peaks zu Argon-Literaturwerten ---")
+        print("\n--- Zuordnung der Peaks zu den neuen Literaturwerten ---")
         for name, peaks in self.ausgewaehlte_peaks.items():
             for peak in peaks:
-                treffer = finde_literaturwert(peak["wellenlaenge"])
+                if "lit_wert" not in peak:
+                    treffer = finde_literaturwert(peak["wellenlaenge"])
+                    if treffer is None:
+                        continue
+                    lit_wert, spezies = treffer
+                    peak["spezies"] = spezies
+                    peak["lit_wert"] = lit_wert
+                else:
+                    lit_wert = peak["lit_wert"]
+                    spezies = peak["spezies"]
 
-                if treffer is None:
-                    print(
-                        f"  {name}, Pixel {int(peak['pixel']):4d} "
-                        f"(≈ {peak['wellenlaenge']:.2f} nm): kein Literaturwert "
-                        f"innerhalb von {LITERATUR_TOLERANZ_NM:g} nm gefunden - "
-                        f"wird ignoriert."
-                    )
-                    continue
-
-                lit_wert, spezies = treffer
                 print(
                     f"  {name}, Pixel {int(peak['pixel']):4d}: "
                     f"{peak['wellenlaenge']:.2f} nm  ->  {spezies} {lit_wert:.3f} nm "
@@ -602,8 +643,8 @@ class SpektrumViewer:
                 serienname.append(name)
                 matched_peaks_info.append((name, peak, spezies, lit_wert))
 
-        if len(pixel) < 2:
-            print(f"Abgebrochen: Nur {len(pixel)} zugeordnete(r) Peak(s) - mindestens 2 nötig.")
+        if len(pixel) < 3:
+            print(f"Abgebrochen: Nur {len(pixel)} zugeordnete(r) Peak(s) - für Grad 3 sind mindestens 4 nötig.")
             return
 
         pixel = np.asarray(pixel, dtype=float)
@@ -615,110 +656,94 @@ class SpektrumViewer:
         wellenlaenge_lit = wellenlaenge_lit[unique_idx]
         serienname = serienname[unique_idx]
 
-        if len(pixel) < 2:
-            print("Abgebrochen: Es werden mindestens 2 verschiedene Pixel benötigt.")
+        if len(pixel) < 3:
+            print("Abgebrochen: Zu wenige eindeutige Pixel.")
             return
             
-        m, b = np.polyfit(pixel, wellenlaenge_lit, 1)
-
         self._temp_matched_peaks = matched_peaks_info
 
-        self.kalibrier_fig = plt.figure(figsize=(12, 9))
+        self.kalibrier_fig = plt.figure(figsize=(13, 8))
         if self.kalibrier_fig.canvas.manager is not None:
             self.kalibrier_fig.canvas.manager.set_window_title(
-                "Wellenlängen-Kalibrierung – linearer Fit gegen Literaturwerte"
+                "Wellenlängen-Kalibrierung – Polynom-Fit gegen Literaturwerte"
             )
 
-        ax_fit = self.kalibrier_fig.add_axes([0.10, 0.58, 0.86, 0.33])
-        ax_res = self.kalibrier_fig.add_axes([0.10, 0.23, 0.86, 0.25])
+        ax_fit = self.kalibrier_fig.add_axes([0.10, 0.42, 0.65, 0.48])
+        ax_res = self.kalibrier_fig.add_axes([0.10, 0.15, 0.65, 0.20])
         
-        ax_btn = self.kalibrier_fig.add_axes([0.38, 0.05, 0.24, 0.08])
+        ax_box = self.kalibrier_fig.add_axes([0.80, 0.65, 0.15, 0.08])
+        self.text_box_grad = TextBox(ax_box, "Polynom-Grad eingeben\n(und Enter drücken):", initial="3")
+        self.text_box_grad.label.set_fontsize(9)
+
+        ax_btn = self.kalibrier_fig.add_axes([0.80, 0.45, 0.15, 0.08])
         self.kalibrier_bestaetig_btn = Button(ax_btn, "Peaks bestätigen")
         self.kalibrier_bestaetig_btn.on_clicked(self._kalibrierung_abschliessen)
 
-        x_fit = np.linspace(pixel.min(), pixel.max(), 500)
-        y_fit = m * x_fit + b
-        residual_nm = wellenlaenge_lit - (m * pixel + b)
+        self.kalibrier_fig._ax_fit = ax_fit
+        self.kalibrier_fig._ax_res = ax_res
+        self.kalibrier_fig._pixel = pixel
+        self.kalibrier_fig._wellenlaenge_lit = wellenlaenge_lit
+        self.kalibrier_fig._serienname = serienname
 
-        for name in self.serien:
-            maske = serienname == name
-            if np.any(maske):
-                punkte = ax_fit.plot(
-                    pixel[maske],
-                    wellenlaenge_lit[maske],
-                    "o",
-                    markersize=7,
-                    label=name,
-                )
-                farbe_serie = punkte[0].get_color()
-                for px, lit_wert in zip(pixel[maske], wellenlaenge_lit[maske]):
-                    ax_fit.annotate(
-                        f"{lit_wert:.2f} nm",
-                        xy=(px, lit_wert),
-                        xytext=(0, 7),
-                        textcoords="offset points",
-                        fontsize=7,
-                        ha="center",
-                        color=farbe_serie,
-                    )
+        def aktualisiere_plot(text_grad):
+            try:
+                grad = int(text_grad)
+            except ValueError:
+                return
+            
+            ax_fit.clear()
+            ax_res.clear()
 
-        ax_fit.plot(x_fit, y_fit, "-", linewidth=1.5, label="Linearer Fit")
-        ax_fit.set_xlabel("Pixel")
-        ax_fit.set_ylabel("Wellenlänge λ (nm, Literaturwert)")
-        ax_fit.set_title(f"Wellenlängen-Kalibrierung: λ = {m:.8g} · Pixel + {b:.8g}")
-        ax_fit.grid(True, alpha=0.3)
-        ax_fit.legend()
+            if len(pixel) <= grad:
+                ax_fit.text(0.5, 0.5, f"Zu wenige Punkte für Grad {grad}!", ha="center", transform=ax_fit.transAxes)
+                self.kalibrier_fig.canvas.draw_idle()
+                return
 
-        for name in self.serien:
-            maske = serienname == name
-            if np.any(maske):
-                ax_res.plot(pixel[maske], residual_nm[maske], "o", markersize=7, label=name)
+            koeffizienten = np.polyfit(pixel, wellenlaenge_lit, grad)
+            p_poly = np.poly1d(koeffizienten)
 
-        ax_res.axhline(0, linestyle="-", linewidth=1, color="black")
-        ax_res.set_xlabel("Pixel")
-        ax_res.set_ylabel("Abweichung vom Fit (nm)")
-        ax_res.set_title("Abweichung der Literaturwerte vom linearen Fit (in nm)")
-        ax_res.grid(True, alpha=0.3)
-        ax_res.legend()
+            x_fit = np.linspace(pixel.min(), pixel.max(), 500)
+            y_fit = p_poly(x_fit)
+            residual_nm = wellenlaenge_lit - p_poly(pixel)
 
-        max_abw_nm = np.max(np.abs(residual_nm))
-        max_abw_pixel = max_abw_nm / abs(m)
+            for name in self.serien:
+                maske = serienname == name
+                if np.any(maske):
+                    ax_fit.plot(pixel[maske], wellenlaenge_lit[maske], "o", markersize=5, color=self.farben[name], label=name)
+                    ax_res.plot(pixel[maske], residual_nm[maske], "o", markersize=5, color=self.farben[name])
 
-        self.kalibrier_fig.text(
-            0.10, 0.15,
-            f"Steigung = {m:.8g} nm/Pixel    |    "
-            f"Achsenabschnitt = {b:.8g} nm    |    "
-            f"max. Abweichung = {max_abw_nm:.4g} nm (≈ {max_abw_pixel:.2f} Pixel)",
-            fontsize=9,
-        )
+            ax_fit.plot(x_fit, y_fit, "-", color="red", linewidth=1.5, label="Fit-Kurve")
+            ax_fit.set_ylabel("Wellenlänge (nm)")
+            ax_fit.set_title("Wellenlängen-Kalibrierung des Spektrometers")
+            ax_fit.grid(True, alpha=0.3)
+            ax_fit.legend(loc="upper left", fontsize=8)
 
-        print(f"{len(pixel)} Peaks validiert – Kalibrierungsfenster geöffnet.")
+            ax_res.axhline(0, linestyle="--", linewidth=1, color="black")
+            ax_res.axhline(0.12, linestyle=":", color="orange", label="±1 Pixel Toleranz")
+            ax_res.axhline(-0.12, linestyle=":", color="orange")
+            ax_res.set_xlabel("Pixel")
+            ax_res.set_ylabel("Residuem (nm)")
+            ax_res.set_title("Abweichungen der Literaturwerte vom Fit")
+            ax_res.grid(True, alpha=0.3)
+
+            max_abw_nm = np.max(np.abs(residual_nm))
+            formel_str = " + ".join([f"{c:.5e}·P^{grad-i}" if i < grad else f"{c:.5f}" for i, c in enumerate(koeffizienten)])
+            formel_str = formel_str.replace("·P^1", "·P").replace("·P^0", "")
+            
+            ax_fit.text(0.01, 1.05, f"λ(P) = {formel_str}  (Max. Abw: {max_abw_nm:.4f} nm)", 
+                        transform=ax_fit.transAxes, fontsize=9, fontweight="bold", color="navy")
+
+            self.kalibrier_fig.canvas.draw_idle()
+
+        self.text_box_grad.on_submit(aktualisiere_plot)
+        aktualisiere_plot("3")
+
         plt.show()
 
     def _kalibrierung_abschliessen(self, ereignis=None) -> None:
-        """Wird aufgerufen, wenn im Kalibrierungsfenster auf 'Peaks bestätigen' geklickt wird."""
-        if hasattr(self, "_temp_matched_peaks"):
-            neue_ausgewaehlte_peaks = {name: [] for name in self.serien}
-
-            for name, peak, spezies, lit_wert in self._temp_matched_peaks:
-                if "mess_wellenlaenge" not in peak:
-                    peak["mess_wellenlaenge"] = peak["wellenlaenge"]
-                
-                peak["spezies"] = spezies
-                peak["lit_wert"] = lit_wert
-                
-                if name in neue_ausgewaehlte_peaks:
-                    neue_ausgewaehlte_peaks[name].append(peak)
-
-            self.ausgewaehlte_peaks = neue_ausgewaehlte_peaks
-            self._aktualisiere_peak_anzeige()
-            print("Nicht zugeordnete Peaks wurden entfernt. Gemessene Wellenlängen bleiben im Plot erhalten.")
-
         if self.kalibrier_fig is not None:
             plt.close(self.kalibrier_fig)
             self.kalibrier_fig = None
-
-    # -- Ereignisse ---------------------------------------------------------
 
     def _aktiviere_koordinaten_anzeige(self) -> None:
         def format_coord(x, y):
