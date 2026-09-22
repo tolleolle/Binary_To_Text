@@ -232,6 +232,9 @@ class SpektrumViewer:
     def _erstelle_fenster(self, titel: str) -> None:
         self.fig, self.ax = plt.subplots(figsize=(13, 6))
         
+        # Nebenteilstriche für Hauptplot aktivieren
+        self.ax.minorticks_on()
+        
         if self.fig.canvas.manager is not None:
             self.fig.canvas.manager.set_window_title(f"Spektrum-Viewer - {titel}")
             try:
@@ -259,8 +262,8 @@ class SpektrumViewer:
         self.add_button = Button(ax_add_button, "Datei hinzufügen")
         self.add_button.on_clicked(self._datei_hinzuufuegen)
 
-        self.ax.set_xlabel("Wellenlänge [nm]")
-        self.ax.set_ylabel("Intensität [a.u.]")
+        self.ax.set_xlabel("wavelength [nm]")
+        self.ax.set_ylabel("intensity [counts/s]")
         self.ax.set_title("Wellenlängenspektrum")
         self.ax.grid(True, alpha=0.3)
 
@@ -671,9 +674,11 @@ class SpektrumViewer:
         ax_fit = self.kalibrier_fig.add_axes([0.10, 0.42, 0.65, 0.48])
         ax_res = self.kalibrier_fig.add_axes([0.10, 0.15, 0.65, 0.20])
         
-        ax_box = self.kalibrier_fig.add_axes([0.80, 0.65, 0.15, 0.08])
-        self.text_box_grad = TextBox(ax_box, "Polynom-Grad eingeben\n(und Enter drücken):", initial="3")
-        self.text_box_grad.label.set_fontsize(9)
+        # Beschriftung separat oberhalb platziert
+        self.kalibrier_fig.text(0.80, 0.74, "Polynom-Grad eingeben\n(und Enter drücken):", fontsize=9, va="bottom")
+
+        ax_box = self.kalibrier_fig.add_axes([0.80, 0.66, 0.15, 0.05])
+        self.text_box_grad = TextBox(ax_box, "", initial="3")
 
         ax_btn = self.kalibrier_fig.add_axes([0.80, 0.45, 0.15, 0.08])
         self.kalibrier_bestaetig_btn = Button(ax_btn, "Peaks bestätigen")
@@ -730,7 +735,8 @@ class SpektrumViewer:
             formel_str = " + ".join([f"{c:.5e}·P^{grad-i}" if i < grad else f"{c:.5f}" for i, c in enumerate(koeffizienten)])
             formel_str = formel_str.replace("·P^1", "·P").replace("·P^0", "")
             
-            ax_fit.text(0.01, 1.05, f"λ(P) = {formel_str}  (Max. Abw: {max_abw_nm:.4f} nm)", 
+            # Text für die Fit-Formel etwas höher gesetzt (y=1.08 statt 1.05)
+            ax_fit.text(0.01, 1.08, f"λ(P) = {formel_str}  (Max. Abw: {max_abw_nm:.4f} nm)", 
                         transform=ax_fit.transAxes, fontsize=9, fontweight="bold", color="navy")
 
             self.kalibrier_fig.canvas.draw_idle()
