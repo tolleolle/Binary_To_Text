@@ -713,8 +713,8 @@ class SpektrumViewer:
                     ax_res.plot(pixel[maske], residual_nm[maske], "o", markersize=5, color=self.farben[name])
 
             ax_fit.plot(x_fit, y_fit, "-", color="red", linewidth=1.5, label="Fit-Kurve")
-            ax_fit.set_ylabel("Wellenlänge (nm)")
-            ax_fit.set_title("Wellenlängen-Kalibrierung des Spektrometers")
+            ax_fit.set_ylabel("Wellenlänge [nm]")
+            ax_fit.set_title("Wellenlängen-Kalibrierung")
             ax_fit.grid(True, alpha=0.3)
             ax_fit.legend(loc="upper left", fontsize=8)
 
@@ -722,7 +722,7 @@ class SpektrumViewer:
             ax_res.axhline(0.12, linestyle=":", color="orange", label="±1 Pixel Toleranz")
             ax_res.axhline(-0.12, linestyle=":", color="orange")
             ax_res.set_xlabel("Pixel")
-            ax_res.set_ylabel("Residuem (nm)")
+            ax_res.set_ylabel("Residuem [nm]")
             ax_res.set_title("Abweichungen der Literaturwerte vom Fit")
             ax_res.grid(True, alpha=0.3)
 
