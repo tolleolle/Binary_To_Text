@@ -248,7 +248,7 @@ class SpektrumViewer:
         self.reset_button.on_clicked(self._peaks_zuruecksetzen)
 
         ax_auto_button = self.fig.add_axes([0.74, 0.072, 0.22, 0.035])
-        self.auto_button = Button(ax_auto_button, "Peaks automatisch finden")
+        self.auto_button = Button(ax_auto_button, "Peaks auswählen")
         self.auto_button.on_clicked(self._peaks_automatisch_finden)
 
         ax_button = self.fig.add_axes([0.74, 0.114, 0.22, 0.035])
@@ -432,7 +432,7 @@ class SpektrumViewer:
             )
 
             if "spezies" in peak and "lit_wert" in peak:
-                label_text = f"Px {int(peak['pixel'])} | [{peak['spezies']}] {x_pos:.2f} nm (lit: {peak['lit_wert']:.2f} nm)"
+                label_text = f" [{peak['spezies']}] {peak['lit_wert']:.2f} nm"
             else:
                 label_text = f"Pixel {int(peak['pixel'])} | {x_pos:.2f} nm"
 
